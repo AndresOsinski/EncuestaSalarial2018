@@ -1,5 +1,6 @@
 import csv
 import numpy as np
+import random
 
 relevant_columns = [0, 1, 3, 5, 7, 8]
 data = []
@@ -237,7 +238,8 @@ with open('argentina-2018.1.csv', newline='') as csvfile:
         if header is None:
             header = row
         else:
-            if not developerish(row[11]) or row[23] != 'Bruto':
+            rowsalary = float(row[22])
+            if not developerish(row[11]) or row[23] != 'Bruto' or rowsalary < 5000 or rowsalary >= 1000000:
                 continue
             sex = {
                 'Hombre': 0,
@@ -293,7 +295,7 @@ with open('argentina-2018.1.csv', newline='') as csvfile:
                 'Doctorado En curso': 5.5,
                 'Doctorado Incompleto': 5.5,
             }.get('{} {}'.format(row[7], row[8]))
-            tecs = [x.strip().lower() for x in row[13].split(',')]
+            tecs = [x.strip().lower() for x in row[13].split(',')] + [x.strip().lower() for x in row[14].split(',')]
             web = int(is_web(tecs))
             back = int(is_back(tecs))
             web_mobile = int(is_web_mobile(tecs))
@@ -302,18 +304,32 @@ with open('argentina-2018.1.csv', newline='') as csvfile:
             rowdata = (sex, age, experience, managing, degree, web, back, web_mobile, ios, android)
             if None in rowdata:
                 continue
-            data.append([float(x) for x in rowdata])
-            salary.append(float(row[22]))
+            data.append([float(x) for x in rowdata] + [1])
+            salary.append(rowsalary)
 
+for i, d in enumerate(data):
+    print(d, salary[i])
+
+columns =  ('sex', 'age', 'experience', 'managing', 'degree', 'web', 'back', 'web_mobile', 'ios', 'android', 'human')
 num_sample = 1000
 x = np.asarray([
     [x[i] for x in data[:num_sample]]
-    for i in range(0, 9)
-] + [[1.0 for x in data[:num_sample]]]).T
+    for i in range(0, len(columns))
+]).T
 y = np.asarray(salary[:num_sample]).T
 coefs = np.linalg.pinv((x.T).dot(x)).dot(x.T.dot(y))
-print(len(data))
-print(coefs)
+print(', '.join('{}: {}'.format(col, round(coefs[i])) for i, col in enumerate(columns)))
 
-for x in range(5):
-    print('expected: ', round(sum(coefs[i] * data[x][i] for i in range(0, 9))), 'value: ', round(salary[x]))
+errs = []
+for x, d in enumerate(data):
+    expected = sum(coefs[i] * d[i] for i in range(0, len(columns)))
+    value = salary[x]
+    err2 = (expected - value) * (expected - value)
+    errs.append((err2, x))
+
+errs.sort(key=lambda x: x[0], reverse=True)
+for (_, x) in errs[:5]:
+    d = data[x]
+    expected = sum(coefs[i] * d[i] for i in range(0, len(columns)))
+    print('expected: {}, value: {}'.format(round(expected), round(salary[x])))
+    print(' '.join('{}: {}'.format(col, d[i]) for i, col in enumerate(columns)))
