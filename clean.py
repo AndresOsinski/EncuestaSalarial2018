@@ -1,10 +1,8 @@
 import csv
-import numpy as np
-import random
+import sys
 
 relevant_columns = [0, 1, 3, 5, 7, 8]
 data = []
-salary = []
 header = None
 
 def developerish(title):
@@ -232,7 +230,7 @@ xamarin
 xml
     '''.split('\n')))
 
-with open('argentina-2018.1.csv', newline='') as csvfile:
+with open('argentina-2018.1.csv' if len(sys.argv) == 1 else sys.argv[1], newline='') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
         if header is None:
@@ -304,32 +302,9 @@ with open('argentina-2018.1.csv', newline='') as csvfile:
             rowdata = (sex, age, experience, managing, degree, web, back, web_mobile, ios, android)
             if None in rowdata:
                 continue
-            data.append([float(x) for x in rowdata] + [1])
-            salary.append(rowsalary)
+            data.append([float(x) for x in rowdata] + [1, rowsalary])
 
-for i, d in enumerate(data):
-    print(d, salary[i])
-
-columns =  ('sex', 'age', 'experience', 'managing', 'degree', 'web', 'back', 'web_mobile', 'ios', 'android', 'human')
-num_sample = 1000
-x = np.asarray([
-    [x[i] for x in data[:num_sample]]
-    for i in range(0, len(columns))
-]).T
-y = np.asarray(salary[:num_sample]).T
-coefs = np.linalg.pinv((x.T).dot(x)).dot(x.T.dot(y))
-print(', '.join('{}: {}'.format(col, round(coefs[i])) for i, col in enumerate(columns)))
-
-errs = []
-for x, d in enumerate(data):
-    expected = sum(coefs[i] * d[i] for i in range(0, len(columns)))
-    value = salary[x]
-    err2 = (expected - value) * (expected - value)
-    errs.append((err2, x))
-
-errs.sort(key=lambda x: x[0], reverse=True)
-for (_, x) in errs[:5]:
-    d = data[x]
-    expected = sum(coefs[i] * d[i] for i in range(0, len(columns)))
-    print('expected: {}, value: {}'.format(round(expected), round(salary[x])))
-    print(' '.join('{}: {}'.format(col, d[i]) for i, col in enumerate(columns)))
+columns =  ('sex', 'age', 'experience', 'managing', 'degree', 'web', 'back', 'web_mobile', 'ios', 'android', 'human', 'salary')
+writer = csv.writer(sys.stdout)
+writer.writerow(columns)
+writer.writerows(data)
