@@ -3,6 +3,7 @@ import numpy as np
 
 relevant_columns = [0, 1, 3, 5, 7, 8]
 data = []
+salary = []
 header = None
 
 def developerish(title):
@@ -83,16 +84,24 @@ vue)
 vue 2
     '''.split('\n')))
 
-def is_mobile(tecs):
+def is_web_mobile(tecs):
     return is_tec(tecs, (x.strip() for x in '''
-android
 cordova
 ionic
-kotlin
-objective-c
 phonegap/cordova
 react native
+    '''.split('\n')))
+
+def is_ios(tecs):
+    return is_tec(tecs, (x.strip() for x in '''
+objective-c
 swift
+    '''.split('\n')))
+
+def is_android(tecs):
+    return is_tec(tecs, (x.strip() for x in '''
+android
+kotlin
     '''.split('\n')))
 
 def is_back(tec):
@@ -227,9 +236,8 @@ with open('argentina-2018.1.csv', newline='') as csvfile:
     for row in reader:
         if header is None:
             header = row
-            print(dict((x, y) for (x, y) in enumerate(header)))
         else:
-            if not developerish(row[11]):
+            if not developerish(row[11]) or row[23] != 'Bruto':
                 continue
             sex = {
                 'Hombre': 0,
@@ -286,24 +294,26 @@ with open('argentina-2018.1.csv', newline='') as csvfile:
                 'Doctorado Incompleto': 5.5,
             }.get('{} {}'.format(row[7], row[8]))
             tecs = [x.strip().lower() for x in row[13].split(',')]
-            for t in tecs:
-                print(t)
-            web = is_web(tecs)
-            back = is_back(tecs)
-            mobile = is_mobile(tecs)
-            rowdata = (sex, age, experience, managing, degree, web, back)
+            web = int(is_web(tecs))
+            back = int(is_back(tecs))
+            web_mobile = int(is_web_mobile(tecs))
+            ios = int(is_ios(tecs))
+            android = int(is_android(tecs))
+            rowdata = (sex, age, experience, managing, degree, web, back, web_mobile, ios, android)
             if None in rowdata:
                 continue
-            data.append(rowdata)
-            # break
+            data.append([float(x) for x in rowdata])
+            salary.append(float(row[22]))
 
-# print(data)
+num_sample = 1000
+x = np.asarray([
+    [x[i] for x in data[:num_sample]]
+    for i in range(0, 9)
+] + [[1.0 for x in data[:num_sample]]]).T
+y = np.asarray(salary[:num_sample]).T
+coefs = np.linalg.pinv((x.T).dot(x)).dot(x.T.dot(y))
+print(len(data))
+print(coefs)
 
-#x = np.asarray([[1,3,6,1,4,6,8,9,2,2],
-#                [2,7,6,1,5,6,3,9,5,7],
-#                [1,3,4,7,4,8,5,1,8,2],
-#                [1,1,1,1,1,1,1,1,1,1]]).T
-#y = np.asarray([1,2,3,4,5,6,7,8,9,10]).T
-#
-#a,b,c,d = np.linalg.pinv((x.T).dot(x)).dot(x.T.dot(y))
-#print(a,b,c,d)
+for x in range(5):
+    print('expected: ', round(sum(coefs[i] * data[x][i] for i in range(0, 9))), 'value: ', round(salary[x]))
