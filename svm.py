@@ -3,13 +3,10 @@ import sys
 import pandas as pd
 import numpy as np
 from sklearn import svm
-from sklearn.model_selection import train_test_split, KFold
-from sklearn.metrics import mean_absolute_error
 
 data = pd.read_csv(sys.stdin)
 
 columns = data.axes[1][:-1]
-folds = KFold(n_splits=4)
 y = data.salary.values
 X = data.drop(['salary'], axis=1).values
 clf = svm.SVR(kernel='rbf', C=75000, gamma=3)
