@@ -22,7 +22,6 @@ x = np.asarray([
 ]).T
 y = np.asarray(salary[:num_sample]).T
 coefs = np.linalg.pinv((x.T).dot(x)).dot(x.T.dot(y))
-print(', '.join('{}: {}'.format(col, round(coefs[i])) for i, col in enumerate(columns)))
 
 errs = []
 for x, d in enumerate(data):
